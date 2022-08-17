@@ -2,26 +2,31 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "storageAccounts_kamsal_name": {
-            "defaultValue": "kamsal",
-            "type": "String"
-        }
+        "storageName": {
+            "defaultValue": "buttonDemo",
+            "type": "String"}
     },
     "variables": {},
     "resources": [
         {
             "type": "Microsoft.Storage/storageAccounts",
             "apiVersion": "2021-09-01",
-            "name": "[parameters('storageAccounts_kamsal_name')]",
-            "location": "westus",
+            "name": "[parameters('storageName')]",
+            "location": "eastus",
             "sku": {
                 "name": "Standard_RAGRS",
                 "tier": "Standard"
             },
             "kind": "StorageV2",
             "properties": {
+                "dnsEndpointType": "Standard",
+                "defaultToOAuthAuthentication": false,
+                "publicNetworkAccess": "Enabled",
+                "allowCrossTenantReplication": false,
+                "isSftpEnabled": false,
                 "minimumTlsVersion": "TLS1_2",
                 "allowBlobPublicAccess": true,
+                "allowSharedKeyAccess": true,
                 "isHnsEnabled": true,
                 "networkAcls": {
                     "bypass": "AzureServices",
@@ -31,8 +36,17 @@
                 },
                 "supportsHttpsTrafficOnly": true,
                 "encryption": {
+                    "requireInfrastructureEncryption": false,
                     "services": {
                         "file": {
+                            "keyType": "Account",
+                            "enabled": true
+                        },
+                        "table": {
+                            "keyType": "Account",
+                            "enabled": true
+                        },
+                        "queue": {
                             "keyType": "Account",
                             "enabled": true
                         },
@@ -49,30 +63,35 @@
         {
             "type": "Microsoft.Storage/storageAccounts/blobServices",
             "apiVersion": "2021-09-01",
-            "name": "[concat(parameters('storageAccounts_kamsal_name'), '/default')]",
+            "name": "[parameters('storageName')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_kamsal_name'))]"
+                "[concat(parameters('storageName'), '/default')]"
             ],
             "sku": {
                 "name": "Standard_RAGRS",
                 "tier": "Standard"
             },
             "properties": {
+                "containerDeleteRetentionPolicy": {
+                    "enabled": true,
+                    "days": 7
+                },
                 "cors": {
                     "corsRules": []
                 },
                 "deleteRetentionPolicy": {
                     "allowPermanentDelete": false,
-                    "enabled": false
+                    "enabled": true,
+                    "days": 7
                 }
             }
         },
         {
             "type": "Microsoft.Storage/storageAccounts/fileServices",
             "apiVersion": "2021-09-01",
-            "name": "[concat(parameters('storageAccounts_kamsal_name'), '/default')]",
+            "name": "[parameters('storageName')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_kamsal_name'))]"
+                "[concat(parameters('storageName'), '/default')]"
             ],
             "sku": {
                 "name": "Standard_RAGRS",
@@ -94,9 +113,9 @@
         {
             "type": "Microsoft.Storage/storageAccounts/queueServices",
             "apiVersion": "2021-09-01",
-            "name": "[concat(parameters('storageAccounts_kamsal_name'), '/default')]",
+            "name": "[parameters('storageName')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_kamsal_name'))]"
+                "[concat(parameters('storageName'), '/default')]"
             ],
             "properties": {
                 "cors": {
@@ -107,166 +126,13 @@
         {
             "type": "Microsoft.Storage/storageAccounts/tableServices",
             "apiVersion": "2021-09-01",
-            "name": "[concat(parameters('storageAccounts_kamsal_name'), '/default')]",
+            "name": "[parameters('storageName')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_kamsal_name'))]"
+                "[concat(parameters('storageName'), '/default')]"
             ],
             "properties": {
                 "cors": {
                     "corsRules": []
-                }
-            }
-        },
-        {
-            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
-            "apiVersion": "2021-09-01",
-            "name": "[concat(parameters('storageAccounts_kamsal_name'), '/default/autoloader')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_kamsal_name'), 'default')]",
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_kamsal_name'))]"
-            ],
-            "properties": {
-                "immutableStorageWithVersioning": {
-                    "enabled": false
-                },
-                "defaultEncryptionScope": "$account-encryption-key",
-                "denyEncryptionScopeOverride": false,
-                "publicAccess": "None"
-            }
-        },
-        {
-            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
-            "apiVersion": "2021-09-01",
-            "name": "[concat(parameters('storageAccounts_kamsal_name'), '/default/landingzone')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_kamsal_name'), 'default')]",
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_kamsal_name'))]"
-            ],
-            "properties": {
-                "immutableStorageWithVersioning": {
-                    "enabled": false
-                },
-                "defaultEncryptionScope": "$account-encryption-key",
-                "denyEncryptionScopeOverride": false,
-                "publicAccess": "None"
-            }
-        },
-        {
-            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
-            "apiVersion": "2021-09-01",
-            "name": "[concat(parameters('storageAccounts_kamsal_name'), '/default/raw')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_kamsal_name'), 'default')]",
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_kamsal_name'))]"
-            ],
-            "properties": {
-                "immutableStorageWithVersioning": {
-                    "enabled": false
-                },
-                "defaultEncryptionScope": "$account-encryption-key",
-                "denyEncryptionScopeOverride": false,
-                "publicAccess": "None"
-            }
-        },
-        {
-            "type": "Microsoft.Storage/storageAccounts/queueServices/queues",
-            "apiVersion": "2021-09-01",
-            "name": "[concat(parameters('storageAccounts_kamsal_name'), '/default/databricks-query-702808a6-7c05-4519-8cb3-9bd2f40b3816-source-0')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts/queueServices', parameters('storageAccounts_kamsal_name'), 'default')]",
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_kamsal_name'))]"
-            ],
-            "properties": {
-                "metadata": {
-                    "checkpointLocation": "dbfs:/mnt/Merge/_checkpoint",
-                    "path": "/mnt/csv/",
-                    "streamId": "702808a6-7c05-4519-8cb3-9bd2f40b3816",
-                    "vendor": "Databricks"
-                }
-            }
-        },
-        {
-            "type": "Microsoft.Storage/storageAccounts/queueServices/queues",
-            "apiVersion": "2021-09-01",
-            "name": "[concat(parameters('storageAccounts_kamsal_name'), '/default/databricks-query-7813addf-a5d8-47c9-84c2-d29c5bea5a02-source-0')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts/queueServices', parameters('storageAccounts_kamsal_name'), 'default')]",
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_kamsal_name'))]"
-            ],
-            "properties": {
-                "metadata": {
-                    "checkpointLocation": "dbfs:/local_disk0/tmp/temporary-fd554437-94ff-4b23-9196-0de8d733615a",
-                    "path": "/mnt/csv/",
-                    "streamId": "7813addf-a5d8-47c9-84c2-d29c5bea5a02",
-                    "vendor": "Databricks"
-                }
-            }
-        },
-        {
-            "type": "Microsoft.Storage/storageAccounts/queueServices/queues",
-            "apiVersion": "2021-09-01",
-            "name": "[concat(parameters('storageAccounts_kamsal_name'), '/default/databricks-query-7d4ef0d5-7dff-428a-b03c-adf03ef738ad-source-0')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts/queueServices', parameters('storageAccounts_kamsal_name'), 'default')]",
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_kamsal_name'))]"
-            ],
-            "properties": {
-                "metadata": {
-                    "checkpointLocation": "dbfs:/mnt/Merge/_checkpoint",
-                    "path": "/mnt/csv/",
-                    "streamId": "7d4ef0d5-7dff-428a-b03c-adf03ef738ad",
-                    "vendor": "Databricks"
-                }
-            }
-        },
-        {
-            "type": "Microsoft.Storage/storageAccounts/queueServices/queues",
-            "apiVersion": "2021-09-01",
-            "name": "[concat(parameters('storageAccounts_kamsal_name'), '/default/databricks-query-8ff83e66-4e84-418d-b8a9-5f690b34bd7e-source-0')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts/queueServices', parameters('storageAccounts_kamsal_name'), 'default')]",
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_kamsal_name'))]"
-            ],
-            "properties": {
-                "metadata": {
-                    "checkpointLocation": "dbfs:/mnt/Merge/_checkpoint",
-                    "path": "/mnt/csv/",
-                    "streamId": "8ff83e66-4e84-418d-b8a9-5f690b34bd7e",
-                    "vendor": "Databricks"
-                }
-            }
-        },
-        {
-            "type": "Microsoft.Storage/storageAccounts/queueServices/queues",
-            "apiVersion": "2021-09-01",
-            "name": "[concat(parameters('storageAccounts_kamsal_name'), '/default/databricks-query-a15d18a4-ad8f-447f-8dd0-8ddede05f4fc-source-0')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts/queueServices', parameters('storageAccounts_kamsal_name'), 'default')]",
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_kamsal_name'))]"
-            ],
-            "properties": {
-                "metadata": {
-                    "checkpointLocation": "dbfs:/mnt/Merge/_checkpoint",
-                    "path": "/mnt/csv/",
-                    "streamId": "a15d18a4-ad8f-447f-8dd0-8ddede05f4fc",
-                    "vendor": "Databricks"
-                }
-            }
-        },
-        {
-            "type": "Microsoft.Storage/storageAccounts/queueServices/queues",
-            "apiVersion": "2021-09-01",
-            "name": "[concat(parameters('storageAccounts_kamsal_name'), '/default/databricks-query-d782e35b-a91a-4b4b-b7d3-e318816c7af9-source-0')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts/queueServices', parameters('storageAccounts_kamsal_name'), 'default')]",
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_kamsal_name'))]"
-            ],
-            "properties": {
-                "metadata": {
-                    "checkpointLocation": "dbfs:/local_disk0/tmp/temporary-f21d416b-3e99-4cf6-a55d-4396829175b5",
-                    "path": "/mnt/csv/",
-                    "streamId": "d782e35b-a91a-4b4b-b7d3-e318816c7af9",
-                    "vendor": "Databricks"
                 }
             }
         }
